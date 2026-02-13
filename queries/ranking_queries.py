@@ -51,22 +51,22 @@ def get_ranking_query(option):
         """,
 
         "Q6 - Highest points in current week": """
-            SELECT TOP 10 co.competitor_name,
-                   co.country,
-                   cr.rank,
-                   cr.points,
-                   cr.week,
-                   cr.year
-            FROM Competitor_Rankings cr
-            JOIN Competitors co
-                ON cr.competitor_id = co.competitor_id
-            WHERE cr.year = (SELECT MAX(year) FROM Competitor_Rankings)
-            AND cr.week = (
-                SELECT MAX(week)
-                FROM Competitor_Rankings
-                WHERE year = (SELECT MAX(year) FROM Competitor_Rankings)
-            )
-            ORDER BY cr.points DESC
+            SELECT co.competitor_name,
+            co.country,
+            cr.rank,
+            cr.points,
+            cr.week,
+            cr.year
+        FROM Competitor_Rankings cr
+        JOIN Competitors co
+            ON cr.competitor_id = co.competitor_id
+        WHERE cr.year = (SELECT MAX(year) FROM Competitor_Rankings)
+        AND cr.week = (
+            SELECT MAX(week)
+            FROM Competitor_Rankings
+            WHERE year = (SELECT MAX(year) FROM Competitor_Rankings)
+        )
+        ORDER BY cr.points DESC
         """
     }
 
