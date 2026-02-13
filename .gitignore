@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+
+# Database
+tennis_db.sqlite
+
+# Env files
+.env
+
+# VSCode settings
+.vscode/
+
+# Others
+*.log
