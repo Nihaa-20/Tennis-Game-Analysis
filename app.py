@@ -60,35 +60,36 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
-# KPI STYLE
-# =========================
+
+# -------------------------------------------------
+# KPI CARD CSS (Add Once)
+# -------------------------------------------------
 st.markdown("""
-<style>
-.kpi-card {
-    background-color: white;
-    padding: 25px;
-    border-radius: 20px;
-    text-align: center;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
-    height: 120px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border: 3px solid #aac1d8;
-}
-.kpi-title {
-    font-size: 20px;
-    color: #666;
-    margin-bottom: 10px;
-}
-.kpi-value {
-    font-size: 30px;
-    font-weight: bold;
-    color: black;
-}
-</style>
-""", unsafe_allow_html=True)
+    <style>
+    .kpi-card {
+        background: linear-gradient(135deg, #1f2937, #111827);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: 0.3s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+    }
+    .kpi-title {
+        color: #9ca3af;
+        font-size: 16px;
+        font-weight: 500;
+    }
+    .kpi-value {
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # =====================================================
 # 🌍 GLOBAL SIDEBAR FILTERS (ALL FILTERS MOVED HERE)
@@ -186,18 +187,16 @@ tab1, tab2, tab3 = st.tabs(["🏆 Competition", "📍 Venue", "👤 Player"])
 # =====================================================
 with tab1:
 
-    st.header("🏆 Competition Explorer")
-
     # =====================================================
     # 🔹 SECTION 2: Key Metrics
     # =====================================================
-    st.subheader("📊 Key Metrics")
+    st.subheader("Key Metrics")
     k1, k2, k3, k4 = st.columns(4)
 
     total_comp = pd.read_sql("SELECT COUNT(*) as total FROM Competitions", conn).iloc[0]['total']
     total_categories = pd.read_sql("SELECT COUNT(DISTINCT category_name) as total FROM Competitions", conn).iloc[0]['total']
-    singles_events = pd.read_sql("SELECT COUNT(*) as total FROM Competitions WHERE type='Singles'", conn).iloc[0]['total']
-    doubles_events = pd.read_sql("SELECT COUNT(*) as total FROM Competitions WHERE type='Doubles'", conn).iloc[0]['total']
+    singles_events = pd.read_sql("SELECT COUNT(*) as total FROM Competitions WHERE type='singles'", conn).iloc[0]['total']
+    doubles_events = pd.read_sql("SELECT COUNT(*) as total FROM Competitions WHERE type='doubles'", conn).iloc[0]['total']
 
     k1.markdown(f'<div class="kpi-card"><div class="kpi-title">Total Competitions</div><div class="kpi-value">{total_comp}</div></div>', unsafe_allow_html=True)
     k2.markdown(f'<div class="kpi-card"><div class="kpi-title">Categories</div><div class="kpi-value">{total_categories}</div></div>', unsafe_allow_html=True)
@@ -525,55 +524,86 @@ with tab2:
 # =====================================================
 with tab3:
 
-    # -----------------------------
-    # Load full player data with competitor info
-    # -----------------------------
-    player_df = pd.read_sql(
+    # -------------------------------------------------
+    # LOAD FULL DATA (FOR KPI ONLY)
+    # -------------------------------------------------
+    full_player_df = pd.read_sql(
         """
-        SELECT r.competitor_id, c.competitor_name, c.country, r.rank, r.movement, r.points,
-               r.competitions_played, r.type_id, r.ranking_name, r.year, r.week, r.gender
+        SELECT r.competitor_id, c.competitor_name, c.country,
+               r.rank, r.movement, r.points,
+               r.competitions_played, r.type_id,
+               r.ranking_name, r.year, r.week, r.gender
         FROM Competitor_Rankings r
-        LEFT JOIN Competitors c ON r.competitor_id = c.competitor_id
+        LEFT JOIN Competitors c
+        ON r.competitor_id = c.competitor_id
         """,
         conn
     )
 
-    # -----------------------------
-    # Apply filters to the player data
-    # -----------------------------
-    visual_player = player_df.copy()
+    # -------------------------------------------------
+    # APPLY YOUR ORIGINAL FILTERS (ONLY FOR VISUALS)
+    # -------------------------------------------------
+    visual_player = full_player_df.copy()
 
     # Rank range filter
     visual_player = visual_player[
-        (visual_player['rank'] >= rank_range[0]) & (visual_player['rank'] <= rank_range[1])
+        (visual_player['rank'] >= rank_range[0]) &
+        (visual_player['rank'] <= rank_range[1])
     ]
 
     # Competitor filter
     if selected_competitor != "All":
-        visual_player = visual_player[visual_player['competitor_name'] == selected_competitor]
+        visual_player = visual_player[
+            visual_player['competitor_name'] == selected_competitor
+        ]
 
-    # -----------------------------
-    # -------- KPI --------
-    # -----------------------------
+    # -------------------------------------------------
+    # KPI SECTION (STABLE - Uses FULL DATA)
+    # -------------------------------------------------
     st.subheader("Key Metrics")
+
     k1, k2, k3, k4 = st.columns(4)
 
-    total_players = visual_player['competitor_id'].nunique()
-    highest_points = visual_player['points'].max()
-    lowest_rank = visual_player['rank'].max()
-    avg_points = int(visual_player['points'].mean() or 0)
+    total_players = full_player_df['competitor_id'].nunique()
+    highest_points = full_player_df['points'].max()
+    lowest_rank = full_player_df['rank'].max()
+    avg_points = int(full_player_df['points'].mean() or 0)
 
-    k1.markdown(f'<div class="kpi-card"><div class="kpi-title">Total Players</div><div class="kpi-value">{total_players}</div></div>', unsafe_allow_html=True)
-    k2.markdown(f'<div class="kpi-card"><div class="kpi-title">Highest Points</div><div class="kpi-value">{highest_points}</div></div>', unsafe_allow_html=True)
-    k3.markdown(f'<div class="kpi-card"><div class="kpi-title">Lowest Rank</div><div class="kpi-value">{lowest_rank}</div></div>', unsafe_allow_html=True)
-    k4.markdown(f'<div class="kpi-card"><div class="kpi-title">Avg Points</div><div class="kpi-value">{avg_points}</div></div>', unsafe_allow_html=True)
+    k1.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Total Players</div>
+        <div class="kpi-value">{total_players}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    k2.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Highest Points</div>
+        <div class="kpi-value">{highest_points}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    k3.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Lowest Rank</div>
+        <div class="kpi-value">{lowest_rank}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    k4.markdown(f"""
+    <div class="kpi-card">
+        <div class="kpi-title">Average Points</div>
+        <div class="kpi-value">{avg_points}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.divider()
 
-    # -----------------------------
+    # -------------------------------------------------
     # SQL Queries Section
-    # -----------------------------
+    # -------------------------------------------------
     st.subheader("Ranking Queries")
+
     rank_options = [
         "Q1 - All competitors with rank",
         "Q2 - Top 5 ranked players",
@@ -582,27 +612,38 @@ with tab3:
         "Q5 - Competitors per country",
         "Q6 - Highest points in current week"
     ]
+
     rank_selected = st.selectbox("Select Query", rank_options, key="rank_query")
     rank_query = get_ranking_query(rank_selected)
+
     rank_df = pd.read_sql(rank_query, conn)
-    st.dataframe(rank_df)
+    st.dataframe(rank_df, use_container_width=True)
 
     st.divider()
 
-    # -----------------------------
-    # Filtered Ranking Table
-    # -----------------------------
+    # -------------------------------------------------
+    # FILTERED RANKING TABLE
+    # -------------------------------------------------
     st.subheader("Filtered Ranking Table")
+
     st.dataframe(
-        visual_player[['rank','competitor_name','country','points','movement','year','week']],
+        visual_player[
+            ['rank','competitor_name','country',
+             'points','movement','year','week']
+        ],
         use_container_width=True
     )
 
-    # -----------------------------
-    # Top 10 Players
-    # -----------------------------
+    # -------------------------------------------------
+    # TOP 10 PLAYERS
+    # -------------------------------------------------
     st.subheader("Top 10 Players")
-    top10_choice = st.radio("Top 10 by:", ["Rank", "Points"], horizontal=True)
+
+    top10_choice = st.radio(
+        "Top 10 by:",
+        ["Rank", "Points"],
+        horizontal=True
+    )
 
     if top10_choice == "Rank":
         top10_df = visual_player.nsmallest(10, 'rank')
@@ -610,16 +651,18 @@ with tab3:
         top10_df = visual_player.nlargest(10, 'points')
 
     st.dataframe(
-        top10_df[['rank','competitor_name','country','points','movement','year','week']],
+        top10_df[
+            ['rank','competitor_name','country',
+             'points','movement','year','week']
+        ],
         use_container_width=True
     )
 
-    # -----------------------------
-    # Movement Analysis (Pie Chart)
-    # -----------------------------
+    # -------------------------------------------------
+    # MOVEMENT ANALYSIS
+    # -------------------------------------------------
     st.subheader("Movement Analysis")
 
-    # Categorize movements
     def categorize_movement(x):
         if x > 0:
             return "Improved"
@@ -631,17 +674,29 @@ with tab3:
     movement_df = visual_player.copy()
     movement_df['Movement'] = movement_df['movement'].apply(categorize_movement)
 
-    movement_counts = movement_df['Movement'].value_counts().reindex(["Dropped","Unchanged","Improved"])
+    movement_counts = (
+        movement_df['Movement']
+        .value_counts()
+        .reindex(["Dropped", "Unchanged", "Improved"])
+        .fillna(0)
+    )
+
     movement_chart_df = movement_counts.reset_index()
-    movement_chart_df.columns = ['Movement','Count']
+    movement_chart_df.columns = ['Movement', 'Count']
 
     fig_movement = px.pie(
         movement_chart_df,
         names='Movement',
         values='Count',
         color='Movement',
-        color_discrete_map={"Improved": "green", "Dropped": "red", "Unchanged": "gray"},
+        color_discrete_map={
+            "Improved": "green",
+            "Dropped": "red",
+            "Unchanged": "gray"
+        },
         title="Player Movement Distribution"
     )
+
     fig_movement.update_traces(textposition='inside', textinfo='percent+label')
+
     st.plotly_chart(fig_movement, use_container_width=True)
